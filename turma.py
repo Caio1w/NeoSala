@@ -6,9 +6,9 @@ def adicionar_aluno( ):
     banco = sqlite3.connect('databaseturma')
     cur = banco.cursor()
 
-    nome = str(input('Acione o nome do aluno '))
-    idade = int(input('Fale a idade do aluno: '))
-    turma = str(input('Fale a turma do aluno: '))
+    nome = str(input('Escreva o nome do aluno: ')).strip()
+    idade = int(input('Escreva a idade do aluno: ')).strip()
+    turma = str(input('Escreva a turma do aluno: ')).strip()
     
     cur.execute('INSERT INTO Alunos (nome, idade, turma) VALUES (?, ?, ?)',
                 (nome,idade,turma))
@@ -44,7 +44,7 @@ def busca_aluno():
             return 'Opção invalida'
     else:
         banco.close()
-        return 'OPção invalida'
+        return 'Opção invalida'
 
     
     alunos = cur.fetchall()
@@ -55,7 +55,7 @@ def atualizador():
     banco = sqlite3.connect('databaseturma')
     cur = banco.cursor()
 
-    idaluno = int(input('Qual é o id do aluno: '))
+    idaluno = int(input('Insira o id do aluno: '))
     cur.execute('SELECT nome FROM Alunos WHERE id = ?', (idaluno,))
     aluno = cur.fetchone()
     if not aluno:
@@ -125,11 +125,11 @@ if __name__ == "__main__":
 
     while True:
         print('1 - Para adicionar aluno')
-        print('2 - Para Listar aluno ')
+        print('2 - Para listar alunos ')
         print('3 - Para atualizar dados')
         print('4 - Para deletar dados')
         print('0 - Para sair ')
-        opção = int(input('Qual sua ação: '))
+        opção = int(input('Insira sua ação: '))
 
         if opção == 1:
             id_novo = adicionar_aluno()
