@@ -11,8 +11,8 @@ Sou iniciante em programação e este é um sistema escolar simples para treinar
 - Deletar alunos
 
 ## Como usar
-
-Execute o arquivo `turma.py` e siga as instruções no terminal.
+Execute primeiro o `setup_db.py` para criar a database 
+E após isso execute o arquivo `turma.py` e siga as instruções no terminal.
 
 ---
 
