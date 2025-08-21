@@ -1,4 +1,4 @@
-# Sistema Escolar
+# NeoSala
 
 Olá! Esse é o meu primeiro projeto em Python publicado no GitHub.  
 Sou iniciante em programação e este é um sistema escolar simples para treinar meus conhecimentos.
@@ -11,8 +11,7 @@ Sou iniciante em programação e este é um sistema escolar simples para treinar
 - Deletar alunos
 
 ## Como usar
-Execute primeiro o `setup_db.py` para criar a database 
-E após isso execute o arquivo `turma.py` e siga as instruções no terminal.
+execute o arquivo `turma.py` e siga as instruções no terminal.
 
 ---
 
