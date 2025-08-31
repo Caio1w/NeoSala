@@ -12,6 +12,7 @@ try:
     print("Banco configurado!")
     cur.execute("DELETE FROM Alunos WHERE escolaridade = ?", ("teste",))
     banco.commit()
+    banco.close
     banco_configurado = 1
 
 except Exception as e:
@@ -54,10 +55,12 @@ while True:
         CREATE TABLE IF NOT EXISTS notas (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     aluno_id INTEGER NOT NULL,
-                    bimestre1 REAL,
-                    bimestre2 REAL,
-                    bimestre3 REAL,
-                    bimestre4 REAL,
+                    b1 REAL,
+                    b2 REAL,
+                    b3 REAL,
+                    b4 REAL,
+                    serie INTEGER NOT NULL,
+                    turma TEXT NOT NULL,
                     FOREIGN KEY (aluno_id) REFERENCES Alunos (id)
                     
                     
@@ -80,7 +83,11 @@ while True:
             
             while True:
                 nome = input('Insira o nome do aluno:  ').strip()
-                idade = int(input('Insira a idade do aluno: '))
+                try:
+                    idade = int(input('Insira a idade do aluno: '))
+                except:
+                    print('Apenas são aceitos numeros.')
+                    continue
                 escolaridade = int(input('1 - Fundamental\n2 - Médio\nInsira a escolaridade dadas as opções acima: '))
                 if escolaridade == 1:
                     escolaridade = 'Fundamental'
@@ -116,7 +123,7 @@ while True:
                         print('Essa serie não existe, tente novamente.')
                         continue
                     try:
-                        turma = input('Qual sala do aluno(ex: A, B, C): ')
+                        turma = input('Qual sala do aluno(ex: A, B, C): ').split().upper()
                         turma_validas = ['A', 'B', 'C', 'D', 'E', 'F']
                     except ValueError as e:
                         print('Insira uma série valida', e)
@@ -169,7 +176,7 @@ while True:
                 print(f'Aluno encontrado! {aluno[0]}')
                 #Menu de alterar aluno
                 while True:
-                    print('1 - Alterar dados\n2 - Remover aluno\n0 - Voltar pro menu principal ')
+                    print('1 - Alterar dados\n2 - Remover aluno\n3 - Seção de notas\n0 - Voltar pro menu principal ')
                     opcao = int(input('Insira sua ação dadas as opções acima: '))
                     if opcao == 1: 
                         print('-------------------------------------')
@@ -179,20 +186,20 @@ while True:
                         oq = int(input('Qual sua ação: '))
                         if oq == 1:
                             cur.execute('SELECT turma FROM Alunos WHERE id = ?', (alunoid,))
-                            sala_atual = cur.fetchone()
+                            turma_atual = cur.fetchone()
                             certeza = input(f'Certeza que deseja alterar a sala de {aluno[0]}?\nPara confirmar escreva o nome do aluno:  ')
                             if certeza == aluno[0]:
-                                sala_validas = ['A', 'B', 'C', 'D', 'E', 'F']
-                                print(f'Salas validas: {sala_validas}')
-                                sala_nome = input('Qual a nova sala do aluno: ').strip().upper()
+                                turma_validas = ['A', 'B', 'C', 'D', 'E', 'F']
+                                print(f'Salas validas: {turma_validas}')
+                                turma_nova = input('Qual a nova sala do aluno: ').strip().upper()
                                 
                                 
-                                if sala_nome not in sala_validas:
+                                if turma_nova not in turma_validas:
                                     print('Sala invalida')
                                     continue
                                 else:
-                                    print(sistema.atualizador_turma(sala_nome, alunoid ))
-                                print(f'Da sala {sala_atual[0]} para {sala_nome} ')
+                                    print(sistema.atualizador_turma(turma_nova, alunoid ))
+                                print(f'Da sala {turma_atual[0]} para {turma_nova} ')
 
                     if opcao == 2:
                         certeza = input(f'Tem certeza que deseja deletar o aluno {aluno[0]}?\nSe sim escreva o nome do aluno abaixo:').strip().upper()
@@ -200,10 +207,159 @@ while True:
                         if certeza == aluno[0].strip().upper():
                             sistema.apagador(alunoid)
                             print('Aluno removido com sucesso')
-                            break
+                            
                         else:
                             print('Operação cancelada')
+                    if opcao == 3:
+                        while True:
+                            print('---Seção de notas---')
+                            print('1 - Para atribuir nota')
+                            print('2 - Visualizar notas')
+                            print('3 - Alterar notas')
+                            print('0 - Voltar')
+                            print(f'Aluno selecionado : {aluno[0]}')
+                            opcao_notas = int(input('Seleciona uma ação acima: '))
+                            # atribuidor de notas
+                            if opcao_notas == 1:
+                                cur.execute('SELECT id FROM Notas WHERE aluno_id = ?', (alunoid,))
+                                resultado = cur.fetchone()
+                                if resultado:
+                                    print('Nota já existente')
+                                    continue
+                                else:
+                                    cur.execute('SELECT serie, turma FROM Alunos  WHERE id = ?', (alunoid,))
+                                    serie_e_turma_cru = cur.fetchone()
+                                    seriedoaluno = serie_e_turma_cru[0]
+                                    trmaluno = serie_e_turma_cru[1]
+                                    print("Deixe vazio caso ainda não haja nota para o bimestre")
+                                    entradab1 = input("Insira a nota para o primeiro bimestre: ")
 
+                                    if entradab1.strip() == "":
+                                        b1 = None  
+                                    else:
+                                        try:
+                                            b1 = round(float(entradab1), 1)
+                                            if b1 > 10:
+                                                print('Notas maiores que 10 não são permitidas.')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
+                                            continue
+                                    entradab2 = input("Insira a nota para o segundo bimestre: ")
+                                    if entradab2.strip() == "":
+
+                                        b2 = None 
+                
+                                    else:
+                                        try:
+                                            b2 = round(float(entradab2), 1)
+                                            if b2 > 10:
+                                                print('Notas maiores que 10 não são permitadas')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
+                                            continue
+                                    entradab3 = input("Insira a nota para o terceiro bimestre: ")
+                                    if entradab3.strip() == "":
+
+                                        b3 = None 
+                
+                                    else:
+                                        try:
+                                            b3 = round(float(entradab3), 1)
+                                            if b3 > 10:
+                                                print('Notas maiores que 10 não são permitadas')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
+                                            continue
+                                    entradab4 = input("Insira a nota para o quarto bimestre: ")
+                                    if entradab4.strip() == "":
+
+                                        b4 = None 
+                
+                                    else:
+                                        try:
+                                            b4 = round(float(entradab4), 1)
+                                            if b4 > 10:
+                                                print('Notas maiores que 10 não são permitadas')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
+                                            continue
+                                    print(sistema.ad_nota(alunoid, b1, b2, b3, b4, seriedoaluno, trmaluno))
+                            #Visualizar as notas
+                            if opcao_notas == 2:
+                                notas = sistema.listar_notas(alunoid)
+                                pos = 0
+                                bi = 1
+                                if notas:
+                                    for nota in notas:
+                                        print(f'Nota do bimestre {bi}: {notas[pos]}')
+
+                                        pos += 1
+                                        bi += 1
+                                else:
+                                    print('Notas não registradas.')
+                            if opcao_notas == 3:
+                                entradab1 = input("Insira a nota para o primeiro bimestre: ")
+
+                                if entradab1.strip() == "":
+                                    b1 = None  
+                                else:
+                                    try:
+                                        b1 = round(float(entradab1), 1)
+                                        if b1 > 10:
+                                            print('Notas maiores que 10 não são permitidas.')
+                                            continue
+                                    except ValueError:
+                                        print("Apenas são aceitos números")
+                                        continue
+                                entradab2 = input("Insira a nota para o segundo bimestre: ")
+                                if entradab2.strip() == "":
+
+                                    b2 = None 
+            
+                                else:
+                                    try:
+                                        b2 = round(float(entradab2), 1)
+                                        if b2 > 10:
+                                            print('Notas maiores que 10 não são permitadas')
+                                            continue
+                                    except ValueError:
+                                        print("Apenas são aceitos números")
+                                        continue
+                                entradab3 = input("Insira a nota para o terceiro bimestre: ")
+                                if entradab3.strip() == "":
+
+                                    b3 = None 
+            
+                                else:
+                                    try:
+                                        b3 = round(float(entradab3), 1)
+                                        if b3 > 10:
+                                            print('Notas maiores que 10 não são permitadas')
+                                            continue
+                                    except ValueError:
+                                        print("Apenas são aceitos números")
+                                        continue
+                                entradab4 = input("Insira a nota para o quarto bimestre: ")
+                                if entradab4.strip() == "":
+
+                                    b4 = None 
+            
+                                else:
+                                    try:
+                                        b4 = round(float(entradab4), 1)
+                                        if b4 > 10:
+                                            print('Notas maiores que 10 não são permitadas')
+                                            continue
+                                    except ValueError:
+                                        print("Apenas são aceitos números")
+                                        continue
+                                print(sistema.alt_nota(alunoid,b1,b2,b3,b4))
+                            if opcao_notas == 0:
+                                break
                     if opcao == 0:
                         break
                             
