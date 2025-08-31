@@ -1,23 +1,21 @@
 import sqlite3, tabulate, time
 import sistema
-banco = sqlite3.connect('database.db')
-cur = banco.cursor()
+
 banco_configurado = False
 try:
-    
-    cur.execute(
-        'INSERT INTO Alunos (nome, idade, escolaridade, serie, turma) VALUES (?, ?, ?, ?, ?)',
-        ('teste', 1, 'teste', 'teste', 'teste')
-    )
-    print("Banco configurado!")
-    cur.execute("DELETE FROM Alunos WHERE escolaridade = ?", ("teste",))
-    banco.commit()
-    banco.close
-    banco_configurado = 1
+    with sqlite3.connect('database.db') as banco:
+        cur = banco.cursor()
+        cur.execute(
+            'INSERT INTO Alunos (nome, idade, escolaridade, serie, turma) VALUES (?, ?, ?, ?, ?)',
+            ('teste', 1, 'teste', 'teste', 'teste')
+        )
+        print("Banco configurado!")
+        cur.execute("DELETE FROM Alunos WHERE escolaridade = ?", ("teste",))
+        banco_configurado = True
 
 except Exception as e:
     print("Banco de dados desconfigurado, crie a database nas opções abaixo.", e)
-    banco_configurado = 0
+    banco_configurado = False
 
 
 while True:
@@ -36,7 +34,7 @@ while True:
     except ValueError:
         print('opção invalida')
     #As opções são daqui pra baixo, essa primeira é só pra configurar o banco
-    if option == 9 and banco_configurado == 0:
+    if option == 9 and banco_configurado == False:
         banco = sqlite3.connect('database.db')
 
         cur = banco.cursor()
@@ -49,30 +47,49 @@ while True:
                     escolaridade TEXT NOT NULL,
                     serie INT NOT NULL,
                     turma TEXT NOT NULL);
+                    
         """)
 
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS notas (
+        CREATE TABLE IF NOT EXISTS notas_fundamental (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     aluno_id INTEGER NOT NULL,
-                    b1 REAL,
-                    b2 REAL,
-                    b3 REAL,
-                    b4 REAL,
+                    portugues REAL,
+                    matematica REAL,
+                    ciencias REAL,
+                    historia REAL,
+                    geografia REAL,
+                    bimestre INTEGER NOT NULL,
                     serie INTEGER NOT NULL,
                     turma TEXT NOT NULL,
                     FOREIGN KEY (aluno_id) REFERENCES Alunos (id)
-                    
-                    
-                    );""")
+                        ON DELETE CASCADE ON UPDATE NO ACTION);""")
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS notas_medio (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    aluno_id INTEGER NOT NULL,
+                    portugues REAL,
+                    matematica REAL,
+                    biologia REAL,
+                    quimica REAL,
+                    fisica REAL,
+                    historia REAL,
+                    geografia REAL,
+                    ingles REAL,
+                    bimestre INTEGER NOT NULL,
+                    serie INTEGER NOT NULL,
+                    turma TEXT NOT NULL,
+                    FOREIGN KEY (aluno_id) REFERENCES Alunos (id)
+                        ON DELETE CASCADE ON UPDATE NO ACTION);""")
+        
         print('Database criada com sucesso, prossiga.')
-        banco_configurado = 1
+        banco_configurado = True
     #Aqui é pra sair independemente se o banco ta configurado ou não
     elif option == 0:
         print('Até a proxima!')
         break
     #Aqui é quando o usuario tenta fazer alguma ação com o banco desconfigurado
-    elif banco_configurado == 0:
+    elif banco_configurado == False:
         print('Banco desconfigurado, configure o banco antes de tentar qualquer ação crie a database.db.')
         time.sleep(2)
         continue
@@ -123,7 +140,7 @@ while True:
                         print('Essa serie não existe, tente novamente.')
                         continue
                     try:
-                        turma = input('Qual sala do aluno(ex: A, B, C): ').split().upper()
+                        turma = input('Qual a turma do aluno(ex: A, B, C): ').strip().upper()
                         turma_validas = ['A', 'B', 'C', 'D', 'E', 'F']
                     except ValueError as e:
                         print('Insira uma série valida', e)
@@ -221,7 +238,13 @@ while True:
                             opcao_notas = int(input('Seleciona uma ação acima: '))
                             # atribuidor de notas
                             if opcao_notas == 1:
-                                cur.execute('SELECT id FROM Notas WHERE aluno_id = ?', (alunoid,))
+                                bimestre_validas = ['1', '2', '3', '4']
+                                qualbimestre = input('Para qual bimestre você deseja atribuir a nota (1, 2, 3 ou 4): ')
+                                if qualbimestre not in bimestre_validas:
+                                    print('Bimestre invalido, tente novamente.')
+                                    continue
+                                bi = int(qualbimestre)
+                                cur.execute('SELECT id FROM notas_fundamental WHERE aluno_id = ? AND bimestre = ?', (alunoid, bi))
                                 resultado = cur.fetchone()
                                 if resultado:
                                     print('Nota já existente')
@@ -231,66 +254,205 @@ while True:
                                     serie_e_turma_cru = cur.fetchone()
                                     seriedoaluno = serie_e_turma_cru[0]
                                     trmaluno = serie_e_turma_cru[1]
-                                    print("Deixe vazio caso ainda não haja nota para o bimestre")
-                                    entradab1 = input("Insira a nota para o primeiro bimestre: ")
+                                    escolaridade_valida = ['Fundamental', 'Médio']
+                                    cur.execute('SELECT escolaridade FROM Alunos WHERE id = ?', (alunoid,))
+                                    escolaridade = cur.fetchone()[0]
+                                    if escolaridade not in escolaridade_valida:
+                                        print('Escolaridade invalida, tente novamente.')
+                                        continue
+                                    if escolaridade == 'Fundamental':
+                                        
+                                    
 
-                                    if entradab1.strip() == "":
-                                        b1 = None  
-                                    else:
-                                        try:
-                                            b1 = round(float(entradab1), 1)
-                                            if b1 > 10:
-                                                print('Notas maiores que 10 não são permitidas.')
-                                                continue
-                                        except ValueError:
-                                            print("Apenas são aceitos números")
-                                            continue
-                                    entradab2 = input("Insira a nota para o segundo bimestre: ")
-                                    if entradab2.strip() == "":
+                                        print("Deixe vazio caso ainda não haja nota para o bimestre")
+                                        entradapor_fund = input("Insira a nota para a materia de portugues: ")
 
-                                        b2 = None 
-                
-                                    else:
-                                        try:
-                                            b2 = round(float(entradab2), 1)
-                                            if b2 > 10:
-                                                print('Notas maiores que 10 não são permitadas')
+                                        if entradapor_fund.strip() == "":
+                                            notportugues_fund = None  
+                                        else:
+                                            try:
+                                                notportugues_fund = round(float(entradapor_fund), 1)
+                                                if notportugues_fund > 10:
+                                                    print('Notas maiores que 10 não são permitidas.')
+                                                    continue
+                                            except ValueError:
+                                                print("Apenas são aceitos números")
                                                 continue
-                                        except ValueError:
-                                            print("Apenas são aceitos números")
-                                            continue
-                                    entradab3 = input("Insira a nota para o terceiro bimestre: ")
-                                    if entradab3.strip() == "":
+                                        entradamat_fund = input("Insira a nota para a materia de matematica: ")
+                                        if entradamat_fund.strip() == "":
 
-                                        b3 = None 
-                
-                                    else:
-                                        try:
-                                            b3 = round(float(entradab3), 1)
-                                            if b3 > 10:
-                                                print('Notas maiores que 10 não são permitadas')
+                                            notmat_fund = None 
+                    
+                                        else:
+                                            try:
+                                                notmat_fund = round(float(entradamat_fund), 1)
+                                                if notmat_fund > 10:
+                                                    print('Notas maiores que 10 não são permitadas')
+                                                    continue
+                                            except ValueError:
+                                                print("Apenas são aceitos números")
                                                 continue
-                                        except ValueError:
-                                            print("Apenas são aceitos números")
-                                            continue
-                                    entradab4 = input("Insira a nota para o quarto bimestre: ")
-                                    if entradab4.strip() == "":
+                                        entranotcie_fund = input("Insira a nota para a materia de ciencias: ")
+                                        if entranotcie_fund.strip() == "":
 
-                                        b4 = None 
-                
-                                    else:
-                                        try:
-                                            b4 = round(float(entradab4), 1)
-                                            if b4 > 10:
-                                                print('Notas maiores que 10 não são permitadas')
+                                            notcie_fund = None 
+                    
+                                        else:
+                                            try:
+                                                notcie_fund = round(float(entranotcie_fund), 1)
+                                                if notcie_fund > 10:
+                                                    print('Notas maiores que 10 não são permitadas')
+                                                    continue
+                                            except ValueError:
+                                                print("Apenas são aceitos números")
                                                 continue
-                                        except ValueError:
-                                            print("Apenas são aceitos números")
-                                            continue
-                                    print(sistema.ad_nota(alunoid, b1, b2, b3, b4, seriedoaluno, trmaluno))
+                                        entradahis_fun = input("Insira a nota para a materia de historia: ")
+                                        if entradahis_fun.strip() == "":
+
+                                            nothis_fun = None
+                                        else:
+                                            try:
+                                                nothis_fun = round(float(entradahis_fun), 1)
+                                                if nothis_fun > 10:
+                                                    print('Notas maiores que 10 não são permitadas')
+                                                    continue
+                                            except ValueError:
+                                                print("Apenas são aceitos números")
+                                                continue
+                                        entradageo_fun = input("Insira a nota para a materia de geografia: ")
+                                        if entradageo_fun.strip() == "":
+                                            
+                                            notgeo_fun = None
+                                        else:
+                                            try:
+                                                notgeo_fun = round(float(entradageo_fun), 1)
+                                                if notgeo_fun > 10:
+                                                    print('Notas maiores que 10 não são permitadas')
+                                                    continue
+                                            except ValueError:
+                                                print("Apenas são aceitos números")
+                                                continue
+
+                                    
+                                        print(sistema.ad_nota_fundamental(alunoid, notportugues_fund, notmat_fund, notcie_fund, nothis_fun, notgeo_fun, bi, seriedoaluno, trmaluno))
+                                    if escolaridade == 'Médio':
+                                        print("Deixe vazio caso ainda não haja nota para o bimestre")
+                                        entradapor_medio = input("Insira a nota para a materia de portugues: ")
+
+                                        if entradapor_medio.strip() == "":
+                                            notportugues_medio = None  
+                                        else:
+                                            try:
+                                                notportugues_medio = round(float(entradapor_medio), 1)
+                                                if notportugues_medio > 10:
+                                                    print('Notas maiores que 10 não são permitidas.')
+                                                    continue
+                                            except ValueError:
+                                                print("Apenas são aceitos números")
+                                                continue
+                                        entradamat_medio = input("Insira a nota para a materia de matematica: ")
+                                        if entradamat_medio.strip() == "":
+
+                                            notmat_medio = None 
+                    
+                                        else:
+                                            try:
+                                                notmat_medio = round(float(entradamat_medio), 1)
+                                                if notmat_medio > 10:
+                                                    print('Notas maiores que 10 não são permitadas')
+                                                    continue
+                                            except ValueError:
+                                                print("Apenas são aceitos números")
+                                                continue
+                                        entranotbio_medio = input("Insira a nota para a materia de biologia: ")
+                                        if entranotbio_medio.strip() == "":
+
+                                            notbio_medio = None 
+                    
+                                        else:
+                                            try:
+                                                notbio_medio = round(float(entranotbio_medio), 1)
+                                                if notbio_medio > 10:
+                                                    print('Notas maiores que 10 não são permitadas')
+                                                    continue
+                                            except ValueError:
+                                                print("Apenas são aceitos números")
+                                                continue
+                                        entranoqim_medio = input("Insira a nota para a materia de quimica: ")
+                                        if entranoqim_medio.strip() == "":
+
+                                            notqim_medio = None
+                                        else:
+                                            try:
+                                                notqim_medio = round(float(entranoqim_medio), 1)
+                                                if notqim_medio > 10:
+                                                    print('Notas maiores que 10 não são permitadas')
+                                                    continue
+                                            except ValueError:
+                                                print("Apenas são aceitos números")
+                                                continue
+                                        entradafis_medio = input("Insira a nota para a materia de fisica: ")
+                                        if entradafis_medio.strip() == "":
+                                            
+                                            notfis_medio = None
+                                        else:
+                                            try:
+                                                notfis_medio = round(float(entradafis_medio), 1)
+                                                if notfis_medio > 10:
+                                                    print('Notas maiores que 10 não são permitadas')
+                                                    continue
+                                            except ValueError:
+                                                print("Apenas são aceitos números")
+                                                continue
+                                        entradahis_medio = input("Insira a nota para a materia de historia: ")
+                                        if entradahis_medio.strip() == "":
+                                            
+                                            nothis_medio = None
+                                        else:
+                                            try:
+                                                nothis_medio = round(float(entradahis_medio), 1)
+                                                if nothis_medio > 10:
+                                                    print('Notas maiores que 10 não são permitadas')
+                                                    continue
+                                            except ValueError:
+                                                print("Apenas são aceitos números")
+                                                continue
+                                        entradageo_medio = input("Insira a nota para a materia de geografia: ")
+                                        if entradageo_medio.strip() == "":
+                                            
+                                            notgeo_medio = None
+                                        else:
+                                            try:
+                                                notgeo_medio = round(float(entradageo_medio), 1)
+                                                if notgeo_medio > 10:
+                                                    print('Notas maiores que 10 não são permitadas')
+                                                    continue
+                                            except ValueError:
+                                                print("Apenas são aceitos números")
+                                                continue
+                                        entradaing_medio = input("Insira a nota para a materia de ingles: ")
+                                        if entradaing_medio.strip() == "":
+                                            
+                                            noting_medio = None
+                                        else:
+                                            try:
+                                                noting_medio = round(float(entradaing_medio), 1)
+                                                if noting_medio > 10:
+                                                    print('Notas maiores que 10 não são permitadas')
+                                                    continue
+                                            except ValueError:
+                                                print("Apenas são aceitos números")
+                                                continue
+                                        print(sistema.ad_nota_medio(alunoid, notportugues_medio, notmat_medio, notbio_medio, notqim_medio, notfis_medio, nothis_medio, notgeo_medio, noting_medio, bi, seriedoaluno, trmaluno))
                             #Visualizar as notas
                             if opcao_notas == 2:
-                                notas = sistema.listar_notas(alunoid)
+                                qualbimestre = input('Para qual bimestre você deseja ver a nota (1, 2, 3 ou 4): ')
+                                if qualbimestre not in ['1', '2', '3', '4']:
+                                    print('Bimestre invalido, tente novamente.')
+                                    continue
+                                bi = int(qualbimestre)
+
+                                notas = sistema.listar_notas(alunoid, bi)
                                 pos = 0
                                 bi = 1
                                 if notas:
@@ -301,63 +463,189 @@ while True:
                                         bi += 1
                                 else:
                                     print('Notas não registradas.')
+                            #Alterar notas
                             if opcao_notas == 3:
-                                entradab1 = input("Insira a nota para o primeiro bimestre: ")
+                                cur.execute('SELECT escolaridade FROM Alunos WHERE id = ?', (alunoid,))
+                                escolaridade = cur.fetchone()[0]
+                                if escolaridade == 'Fundamental':
+                                    print('Deixe vazio caso não queira alterar a nota')
+                                    entradapor_fund = input("Insira a nova nota para a materia de portugues: ")
 
-                                if entradab1.strip() == "":
-                                    b1 = None  
-                                else:
-                                    try:
-                                        b1 = round(float(entradab1), 1)
-                                        if b1 > 10:
-                                            print('Notas maiores que 10 não são permitidas.')
+                                    if entradapor_fund.strip() == "":
+                                        notportugues_fund = None  
+                                    else:
+                                        try:
+                                            notportugues_fund = round(float(entradapor_fund), 1)
+                                            if notportugues_fund > 10:
+                                                print('Notas maiores que 10 não são permitidas.')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
                                             continue
-                                    except ValueError:
-                                        print("Apenas são aceitos números")
-                                        continue
-                                entradab2 = input("Insira a nota para o segundo bimestre: ")
-                                if entradab2.strip() == "":
+                                    entradamat_fund = input("Insira a nova nota para a materia de matematica: ")
+                                    if entradamat_fund.strip() == "":
 
-                                    b2 = None 
-            
-                                else:
-                                    try:
-                                        b2 = round(float(entradab2), 1)
-                                        if b2 > 10:
-                                            print('Notas maiores que 10 não são permitadas')
+                                        notmat_fund = None 
+                
+                                    else:
+                                        try:
+                                            notmat_fund = round(float(entradamat_fund), 1)
+                                            if notmat_fund > 10:
+                                                print('Notas maiores que 10 não são permitadas')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
                                             continue
-                                    except ValueError:
-                                        print("Apenas são aceitos números")
-                                        continue
-                                entradab3 = input("Insira a nota para o terceiro bimestre: ")
-                                if entradab3.strip() == "":
+                                    entranotcie_fund = input("Insira a nova nota para a materia de ciencias: ")
+                                    if entranotcie_fund.strip() == "":
 
-                                    b3 = None 
-            
-                                else:
-                                    try:
-                                        b3 = round(float(entradab3), 1)
-                                        if b3 > 10:
-                                            print('Notas maiores que 10 não são permitadas')
+                                        notcie_fund = None 
+                
+                                    else:
+                                        try:
+                                            notcie_fund = round(float(entranotcie_fund), 1)
+                                            if notcie_fund > 10:
+                                                print('Notas maiores que 10 não são permitadas')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
                                             continue
-                                    except ValueError:
-                                        print("Apenas são aceitos números")
-                                        continue
-                                entradab4 = input("Insira a nota para o quarto bimestre: ")
-                                if entradab4.strip() == "":
+                                    entradahis_fun = input("Insira a nova nota para a materia de historia: ")
+                                    if entradahis_fun.strip() == "":
 
-                                    b4 = None 
-            
-                                else:
-                                    try:
-                                        b4 = round(float(entradab4), 1)
-                                        if b4 > 10:
-                                            print('Notas maiores que 10 não são permitadas')
+                                        nothis_fun = None
+                                    else:
+                                        try:
+                                            nothis_fun = round(float(entradahis_fun), 1)
+                                            if nothis_fun > 10:
+                                                print('Notas maiores que 10 não são permitadas')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
                                             continue
-                                    except ValueError:
-                                        print("Apenas são aceitos números")
-                                        continue
-                                print(sistema.alt_nota(alunoid,b1,b2,b3,b4))
+                                    entradageo_fun = input("Insira a nova nota para a materia de geografia: ")
+                                    if entradageo_fun.strip() == "":
+                                        
+                                        notgeo_fun = None
+                                    else:
+                                        try:
+                                            notgeo_fun = round(float(entradageo_fun), 1)
+                                            if notgeo_fun > 10:
+                                                print('Notas maiores que 10 não são permitadas')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
+                                            continue
+                                    print(sistema.alt_nota_fundamental(alunoid, notportugues_fund, notmat_fund, notcie_fund, nothis_fun, notgeo_fun))
+                                if escolaridade == 'Médio':
+                                    print('Deixe vazio caso não queira alterar a nota')
+                                    entradapor_medio = input("Insira a nova nota para a materia de portugues: ")
+
+                                    if entradapor_medio.strip() == "":
+                                        notportugues_medio = None  
+                                    else:
+                                        try:
+                                            notportugues_medio = round(float(entradapor_medio), 1)
+                                            if notportugues_medio > 10:
+                                                print('Notas maiores que 10 não são permitidas.')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
+                                            continue
+                                    entradamat_medio = input("Insira a nova nota para a materia de matematica: ")
+                                    if entradamat_medio.strip() == "":
+
+                                        notmat_medio = None 
+                
+                                    else:
+                                        try:
+                                            notmat_medio = round(float(entradamat_medio), 1)
+                                            if notmat_medio > 10:
+                                                print('Notas maiores que 10 não são permitadas')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
+                                            continue
+                                    entranotbio_medio = input("Insira a nova nota para a materia de biologia: ")
+                                    if entranotbio_medio.strip() == "":
+
+                                        notbio_medio = None 
+                
+                                    else:
+                                        try:
+                                            notbio_medio = round(float(entranotbio_medio), 1)
+                                            if notbio_medio > 10:
+                                                print('Notas maiores que 10 não são permitadas')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
+                                            continue
+                                    entranoqim_medio = input("Insira a nova nota para a materia de quimica: ")
+                                    if entranoqim_medio.strip() == "":
+
+                                        notqim_medio = None
+                                    else:
+                                        try:
+                                            notqim_medio = round(float(entranoqim_medio), 1)
+                                            if notqim_medio > 10:
+                                                print('Notas maiores que 10 não são permitadas')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
+                                            continue
+                                    entradafis_medio = input("Insira a nova nota para a materia de fisica: ")
+                                    if entradafis_medio.strip() == "":
+                                        
+                                        notfis_medio = None
+                                    else:
+                                        try:
+                                            notfis_medio = round(float(entradafis_medio), 1)
+                                            if notfis_medio > 10:
+                                                print('Notas maiores que 10 não são permitadas')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
+                                            continue
+                                    entradahis_medio = input("Insira a nova nota para a materia de historia: ")
+                                    if entradahis_medio.strip() == "":
+                                        
+                                        nothis_medio = None
+                                    else:
+                                        try:
+                                            nothis_medio = round(float(entradahis_medio), 1)
+                                            if nothis_medio > 10:
+                                                print('Notas maiores que 10 não são permitadas')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
+                                            continue
+                                    entradageo_medio = input("Insira a nova nota para a materia de geografia: ")
+                                    if entradageo_medio.strip() == "":
+                                        
+                                        notgeo_medio = None
+                                    else:
+                                        try:
+                                            notgeo_medio = round(float(entradageo_medio), 1)
+                                            if notgeo_medio > 10:
+                                                print('Notas maiores que 10 não são permitadas')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
+                                            continue
+                                    entradaing_medio = input("Insira a nova nota para a materia de ingles: ")
+                                    if entradaing_medio.strip() == "":
+                                        
+                                        noting_medio = None
+                                    else:
+                                        try:
+                                            noting_medio = round(float(entradaing_medio), 1)
+                                            if noting_medio > 10:
+                                                print('Notas maiores que 10 não são permitadas')
+                                                continue
+                                        except ValueError:
+                                            print("Apenas são aceitos números")
+                                            continue
+                                    print(sistema.alt_nota_medio(alunoid, notportugues_medio, notmat_medio, notbio_medio, notqim_medio, notfis_medio, nothis_medio, notgeo_medio, noting_medio))
                             if opcao_notas == 0:
                                 break
                     if opcao == 0:
@@ -369,9 +657,3 @@ while True:
 
     
                     
-
-                
-
-        
-            
-            
